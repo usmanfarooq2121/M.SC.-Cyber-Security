@@ -1,0 +1,95 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import torch
+import torch.nn as nn
+import torch.optim as optim
+
+# Define a simple environment for the 5G scenario
+class Simple5GEnv:
+    def __init__(self):
+        # Let's say we have 3 actions: 0, 1, 2 representing different routing strategies
+        self.action_space = 3
+        self.state = 0  # Simplified state for demonstration
+
+    def step(self, action):
+        # Simplified outcome of actions on latency (reward)
+        # Lower "latency" values are better, so they yield higher rewards
+        reward = -abs(action - np.random.randint(0, 3)) * 10 + 40
+        next_state = self.state  # State does not change for simplicity
+        return next_state, reward
+
+    def reset(self):
+        self.state = 0
+        return self.state
+
+# Define a simple neural network for the Q-learning model
+class SimpleDQN(nn.Module):
+    def __init__(self):
+        super(SimpleDQN, self).__init__()
+        self.network = nn.Sequential(
+            nn.Linear(1, 10),  # Input layer (state size to hidden layer)
+            nn.ReLU(),
+            nn.Linear(10, 3)   # Output layer (hidden layer to action size)
+        )
+
+    def forward(self, x):
+        return self.network(x)
+
+def train_model(env, model, episodes, learning_rate=0.01):
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    loss_fn = nn.MSELoss()
+    rewards = []
+
+    for episode in range(episodes):
+        state = env.reset()
+        total_reward = 0
+
+        while True:
+            state_tensor = torch.FloatTensor([state]).unsqueeze(0)
+            q_values = model(state_tensor)
+
+            # Epsilon-greedy policy for action selection
+            if np.random.rand() > 0.1:  # 90% exploit, 10% explore
+                action = q_values.argmax().item()
+            else:
+                action = np.random.randint(0, env.action_space)
+
+            next_state, reward = env.step(action)
+            total_reward += reward
+
+            # Predict future rewards
+            with torch.no_grad():
+                next_state_tensor = torch.FloatTensor([next_state]).unsqueeze(0)
+                future_rewards = model(next_state_tensor)
+                max_future_reward = future_rewards.max().item()
+                target_value = reward + 0.99 * max_future_reward
+
+            # Update model
+            current_q_value = q_values[0, action]
+            loss = loss_fn(current_q_value, torch.tensor([target_value]))
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            if total_reward > 100 or total_reward < -100:  # Arbitrary end condition
+                break
+
+        rewards.append(total_reward)
+
+    return rewards
+
+# Initialize the environment and model
+env = Simple5GEnv()
+model = SimpleDQN()
+
+# Train the model
+episodes = 300
+rewards = train_model(env, model, episodes)
+
+# Visualization of the training progress
+plt.figure(figsize=(10, 6))
+plt.plot(rewards)
+plt.title("Total Rewards Over Episodes")
+plt.xlabel("Episode")
+plt.ylabel("Total Reward")
+plt.grid(True)
