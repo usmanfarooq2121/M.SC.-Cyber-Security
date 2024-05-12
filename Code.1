@@ -1,0 +1,46 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+
+# Step 1: Simulate network conditions
+# Generate simulated data for network conditions (e.g., latency, throughput)
+# and the performance of three routing protocols
+np.random.seed(42)
+network_conditions = np.random.rand(1000, 2)  # 1000 samples, 2 features (latency, throughput)
+protocol_performance = np.random.choice(['Protocol1', 'Protocol2', 'Protocol3'], 1000)  # Random performance
+
+# Step 2: Evaluate Routing Protocols
+# For simplicity, we are directly using the generated labels as performance evaluation
+
+# Step 3: Machine Learning Model to predict optimal routing protocol
+X_train, X_test, y_train, y_test = train_test_split(network_conditions, protocol_performance, test_size=0.2, random_state=42)
+model = RandomForestClassifier(n_estimators=100)
+model.fit(X_train, y_train)
+predictions = model.predict(X_test)
+
+# Accuracy of the model
+accuracy = accuracy_score(y_test, predictions)
+print(f"Prediction Accuracy: {accuracy:.2f}")
+
+# Visualization
+# Performance of Routing Protocols
+plt.figure(figsize=(12, 6))
+plt.scatter(network_conditions[:, 0], network_conditions[:, 1], c=pd.factorize(protocol_performance)[0], alpha=0.5)
+plt.title("Simulated Network Conditions and Routing Protocol Performance")
+plt.xlabel("Latency")
+plt.ylabel("Throughput")
+plt.colorbar(label='Routing Protocol')
+plt.show()
+
+# Machine Learning Model Predictions
+plt.figure(figsize=(12, 6))
+plt.scatter(X_test[:, 0], X_test[:, 1], c=pd.factorize(predictions)[0], alpha=0.5)
+plt.title("Machine Learning Model Predictions for Optimal Routing Protocol")
+plt.xlabel("Latency")
+plt.ylabel("Throughput")
+plt.colorbar(label='Predicted Optimal Protocol')
+plt.show()
+
